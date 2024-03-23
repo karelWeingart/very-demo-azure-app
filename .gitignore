@@ -1,0 +1,15 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# virtualenv
+venv/
+
+### Terraform ###
+# Terraform - https://terraform.io/
+.terraform
+terraform.tfstate
+terraform.tfstate.backup
+*.tfvars
+

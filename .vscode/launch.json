@@ -5,16 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: FastAPI",
+            "name": "Python: demo app",
             "type": "debugpy",
             "request": "launch",
             "module": "uvicorn",
-            "cwd": "${workspaceFolder}/src",
+            "cwd": "${workspaceFolder}/apps/demo/src",
             "args": [
                 "main:app",
                 "--reload"
             ],
-            "jinja": true
+            "jinja": false
         }
     ]
 }

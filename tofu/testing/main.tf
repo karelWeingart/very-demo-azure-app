@@ -9,17 +9,6 @@ locals {
     subscription_id_alphanumeric = replace(reverse(split("/", data.azurerm_subscription.current.id))[0], "-", "")
 }
 
-resource "random_password" "db_admin_user" {
-  length           = 10
-  special          = false  
-}
-
-resource "random_password" "db_admin_pw" {
-  length           = 32
-  special          = true
-
-}
-
 data "azurerm_subscription" "current" {
 }
 
@@ -30,6 +19,16 @@ resource "azurerm_resource_group" "rg" {
   location = var.resource_group_location
   name     = local.resource_name
   tags     = local.tags
+}
+
+resource "random_password" "db_admin_user" {
+  length           = 10
+  special          = false  
+}
+
+resource "random_password" "db_admin_pw" {
+  length           = 32
+  special          = true
 }
 
 module "key_vault" {
@@ -51,6 +50,38 @@ module "key_vault" {
     ]
 }
 
+module "open_weather_crawler_function" {
+  source = "../modules/functions"
+
+  app_settings = {}
+
+  key_vault_id = module.key_vault.key_vault.id
+
+  function_secrets = [
+    {
+      name = "dbUser"
+      value = "TO_BE_ADDED"
+      env_var_name = "KEY_VAULT_DBUSER"
+    },
+    {
+      name = "dbPswd"
+      value = "TO_BE_ADDED"
+      env_var_name = "KEY_VAULT_DBPSWD"
+    },
+    {
+      name = "apiToken"
+      value = "TO_BE_ADDED"
+      env_var_name = "KEY_VAULT_OPENWEATHER_TOKEN"
+    }
+  ]
+
+  function_name = "OpenWeatherCrawler"
+  location = var.resource_group_location
+  environment = var.environment
+  tags = local.tags
+
+}
+
 module "db" {
   source = "../modules/azure_sql"
   
@@ -58,6 +89,7 @@ module "db" {
   name = "demo-db"
   tags = local.tags
   location = var.resource_group_location
+
   admin_login_password = lookup(module.key_vault.key_vault_secrets, "dbAdminPasswd", "")
   admin_login_user = lookup(module.key_vault.key_vault_secrets, "dbAdminUser", "")
 }

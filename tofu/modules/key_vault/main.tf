@@ -76,7 +76,11 @@ resource "azurerm_key_vault" "vault" {
     ip_rules = local.ip_rules
   }
   
-  tags                = var.tags  
+  tags                = var.tags
+
+  lifecycle {
+    ignore_changes = [ network_acls ]
+  }
 }
 
 resource "azurerm_key_vault_secret" "secret" {
@@ -85,5 +89,6 @@ resource "azurerm_key_vault_secret" "secret" {
   name         = each.key
   key_vault_id = azurerm_key_vault.vault.id
   value        = each.value
+  
   tags         = var.tags
 }

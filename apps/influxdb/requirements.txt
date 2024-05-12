@@ -1,0 +1,6 @@
+influxdb3-python
+fastapi
+uvicorn
+gunicorn
+pytest
+python-multipart

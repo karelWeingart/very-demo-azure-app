@@ -1,6 +1,8 @@
 from xml.etree import ElementTree
 from fastapi import UploadFile
 from influxdb_client_3 import Point
+from typing import Iterable
+from datetime import datetime
 
 class XmlService:
 
@@ -10,7 +12,7 @@ class XmlService:
         self._xml_root = ElementTree.parse(xml_file.file)
         self._measurement_name = measurement_name
 
-    def get_data(self) -> list[dict]:
+    def get_influx_points(self) -> list[dict]:
         raise NotImplemented
     
 class JUnitTestResultsService(XmlService):
@@ -19,17 +21,20 @@ class JUnitTestResultsService(XmlService):
     TESTCASE_XPATH: str = "./testcase"
     CLASS_ATTRIBUTE: str = "classname"
     FAILURE_XPATH: str = "./failure"
-    SKIPPED_XPATH: str = "./failure"
+    SKIPPED_XPATH: str = "./skipped"
     TESTCASE_PROPERTIES_XPATH: str = ".//property" 
 
 
-    def get_data(self) -> list[Point]:
+    def get_influx_points(self) -> list[Point]:
+        
         _testsuites: list[ElementTree.Element] = self._xml_root.findall(self.TESTSUITE_XPATH)
         _ret_list: list = []
+        _now: datetime = datetime.now()
+        
         for __testsuite in _testsuites:            
             for __test_case in __testsuite.findall(self.TESTCASE_XPATH):
                 _p = (Point(measurement_name=self._measurement_name)
-                  .time(__testsuite.attrib.get("timestamp"))
+                  .time(__testsuite.attrib.get("timestamp")) #.time(_now.isoformat()
                   .tag("test_suite", __testsuite.attrib.get("name"))
                 )
                 _p.tag("test_class_name", __test_case.get(self.CLASS_ATTRIBUTE))
@@ -40,12 +45,22 @@ class JUnitTestResultsService(XmlService):
                     _p.field("skipped", 1)
                 else:
                     _p.field("success", 1)
+                for _data in self._get_properties_for_test_case(__test_case):
+                    _p.tag(**_data)
                 _p.field("duration", __test_case.attrib.get("time"))
                 
                 _ret_list.append(_p)
-            
 
+        return _ret_list
+
+    def _get_properties_for_test_case(self, test_case: ElementTree.Element) -> Iterable[dict]:
         
-        return _ret_list           
+        for __property in test_case.findall(self.TESTCASE_PROPERTIES_XPATH):
+            yield {
+                    "key": __property.attrib.get("name"),
+                    "value": __property.attrib.get("value")
+                }
+
+
 
         

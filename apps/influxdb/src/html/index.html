@@ -1,0 +1,173 @@
+<html>
+    <head>
+        <title>Demo</title>
+        <link href="css/bootstrap.min.css" rel="stylesheet">
+
+        <script src="js/bootstrap.bundle.min.js"></script>
+        <script src="js/plotly/plotly.js" charset="utf-8"></script>
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg bg-primary">
+            <div class="container-fluid">
+                <h1 class="navbar-brand text-white" href="#">Demo InfluxDb Charts</h1>
+                <!-- Button trigger modal -->
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#loginModal">
+                    Login
+                </button>
+            </div>
+        </nav>
+        
+        <div class="container pt-1">
+            <div class="row mt-5">
+                
+                
+                <!-- Login Modal -->
+                <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h1 class="modal-title fs-5" id="loginModalLabel">Login Modal</h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            
+                            <form action="" id="loginForm">
+                            <div class="modal-body">
+                                <label for="username" class="form-label">Username:</label>
+                                <input type="text" class="form-control" placeholder="Enter Username" name="username" required>
+                                <label for="password" class="form-label">Password:</label>
+                                <input type="password" class="form-control" placeholder="Enter Password" name="password" required>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Login</button>
+                            </div>
+                            </form>
+                            <script>
+                                let loginForm = document.getElementById("loginForm");
+                                loginForm.addEventListener("submit", (e) => {
+                                    e.preventDefault();
+                                    console.log(e)
+                                    data = new FormData(loginForm);
+                                    const options = {
+                                        method: 'POST',
+                                        body: data
+                                    };
+                                    fetch('/token', options)
+                                        .then(response => response.json())
+                                        .then(data => {
+                                            const loginModal = document.getElementById('loginModal');
+                                            const modal = bootstrap.Modal.getInstance(loginModal);    
+                                            modal.hide();
+                                            localStorage.userAccess = JSON.stringify(data)
+                                            
+                                            plot()
+                                        });
+                                });                                
+                            </script>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-5">
+                <div class="card h-25 p-0 col-sm me-4">
+                    <div class="card-header bg-primary-subtle text-primary">
+                        Successful Testcases per Day
+                    </div>
+                    <div class="card-body">
+                        <div id="success" class="h-100"></div>
+                    </div>                    
+                </div>
+                <div class="card col-sm p-0">
+                    <div class="card-header bg-primary-subtle text-primary">
+                        Failed Testcases per Day
+                    </div>
+                    <div class="card-body">
+                        <div id="fail" class="h-100"></div>
+                    </div> 
+                </div>
+            </div>
+
+            <script>
+                function plot(){
+                    const successSeriesPerDay = document.getElementById('success');
+                    const failSeriesPerDay = document.getElementById('fail');
+
+                    userAccess = JSON.parse(localStorage.userAccess);
+                    document.cookie = "influx_host=" + userAccess.influx_host + ";path=/"
+                    data = JSON.stringify({
+                                measurement: 'unit-tests',
+                                influx_database: userAccess.influx_bucket,
+                                influx_org: userAccess.influx_org,
+                                plotly_graph_type: "scatter",
+                                interval: 30,
+                                x_axis: 'date',
+                                aggregate_function: 'Sum',
+                                group_by: 'test_case_name',
+                                field: 'success'
+                                                           
+                            })
+                    console.log(data)
+                    
+                    const options = {
+
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + userAccess.token,
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: data
+                        };
+                    
+                    fetch('/report', options)
+                        .then(response => response.json())
+                        .then(
+                            
+                            data => {Plotly.newPlot(successSeriesPerDay, data)}
+                        )
+                                                                
+                    ; 
+
+                    data = JSON.stringify({
+                                measurement: 'unit-tests',
+                                influx_database: userAccess.influx_bucket,
+                                influx_org: userAccess.influx_org,
+                                plotly_graph_type: "scatter",
+                                interval: 30,
+                                x_axis: 'date',
+                                aggregate_function: 'Max',
+                                group_by: 'test_case_name',
+                                field: 'duration'
+                                                           
+                            })
+                    console.log(data)
+                    
+                    const optionsFail = {
+
+                        method: 'POST',
+                        headers: {
+                            'Authorization': 'Bearer ' + userAccess.token,
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: data
+                        };
+                    
+                    fetch('/report', optionsFail)
+                        .then(response => response.json())
+                        .then(
+                            
+                            data => {Plotly.newPlot(failSeriesPerDay, data)}
+                        )
+                                                                
+                    ; 
+                    
+                }
+            </script>
+        
+        
+            
+        </div>
+        
+    </body>
+</html>

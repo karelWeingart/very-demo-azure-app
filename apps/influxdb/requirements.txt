@@ -1,6 +1,12 @@
 influxdb3-python
+pyinfluxql
 fastapi
 uvicorn
 gunicorn
 pytest
 python-multipart
+requests
+pandas
+azure-keyvault-secrets
+azure-identity
+pydantic-settings

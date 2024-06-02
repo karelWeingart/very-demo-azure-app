@@ -72,11 +72,15 @@ resource "azurerm_key_vault" "vault" {
 
   network_acls {
     bypass = "AzureServices"
-    default_action = "Deny"
-    ip_rules = local.ip_rules
+    default_action = "Allow"
+    
+    # ip_rules = local.ip_rules
   }
   
-  tags                = var.tags  
+  tags                = var.tags
+  lifecycle {
+    ignore_changes = [ access_policy ]
+  }
 }
 
 resource "azurerm_key_vault_secret" "secret" {
